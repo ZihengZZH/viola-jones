@@ -1,2 +1,3 @@
 # exclude training images
 train_images/
+*/__pycache__/
