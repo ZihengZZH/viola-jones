@@ -4,6 +4,8 @@ from enum import Enum
 
 
 class featureType(Enum):
+    # featureType .value to access the tuple
+    # tuple(width, height)
     TWO_VERTICAL = (1, 2)
     TWO_HORIZONTAL = (2, 1)
     THREE_VERTICAL = (1, 3)
@@ -17,12 +19,14 @@ class HaarLikeFeature(object):
     # h_j(x) = 1 if p_j*f_j(x) < p_j*threshold
     # h_j(x) = 0 otherwise
 
-    def __init__(self, feature_type, position, width, height, threshold, parity):
-        # para feature_type: 5 enumerate types in total
-        # para position: position of sub-window (top-left)
-        # para width, height: size of the image
-        # para threshold: min number of misclassified examples
-        # para parity: indicating the direction of the inequality
+    def __init__(self, feature_type, position, width, height, threshold, parity, weight=1):
+        '''
+        : para feature_type: 5 enumerate types in total
+        : para position: position of sub-window (top-left)
+        : para width, height: size of the image
+        : para threshold: min number of misclassified examples
+        : para parity: indicating the direction of the inequality (+1 or -1)
+        '''
         self.type = feature_type
         self.top_left = position
         self.bottom_right = (position[0]+width, position[1]+height)
@@ -30,7 +34,7 @@ class HaarLikeFeature(object):
         self.height = height
         self.threshold = threshold
         self.parity = parity
-        self.weight = 1
+        self.weight = weight
 
     def calc_score(self, int_img):
         score, white, grey = 0, 0, 0

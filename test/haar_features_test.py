@@ -9,7 +9,7 @@ from PIL import Image
 '''
 unittest: The Python unit testing framework
 unittest supports test automation, sharing of setup and shutdown code for tests, aggregation of tests into collections, and independence of the tests from the reporting framework.
-to run the unittest, python -m unittest test.integral_image_test
+to run the unittest, python -m unittest test.haar_features_test
 '''
 
 size = (24, 24) # resize the image with even-number width & height

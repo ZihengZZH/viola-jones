@@ -1,4 +1,6 @@
 # exclude training images
 train_images/
+trained/
 */__pycache__/
 .vscode
+*.json
