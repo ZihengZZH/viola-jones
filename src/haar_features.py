@@ -81,7 +81,7 @@ class HaarLikeFeature(object):
         return score
 
     def get_vote(self, int_img):
-        # Get the vote of this feature for a given integral image
+        # Get the vote of this feature for a given integral image (prediction)
         # note h_j(x) = 0 otherwise
         score = self.calc_score(int_img)
         return self.weight * (1 if score < self.parity * self.threshold else 0)

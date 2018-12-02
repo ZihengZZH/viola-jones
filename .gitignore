@@ -4,3 +4,4 @@ trained/
 */__pycache__/
 .vscode
 *.json
+*.txt

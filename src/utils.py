@@ -9,7 +9,17 @@ from functools import partial
 
 path_data_face = './train_images/FACES'
 path_data_no_face = './train_images/NFACES'
-path_json_file = './haarClassifiers.json'
+path_json_file = './data/haarClassifiers.json'
+path_json_feat = './data/allFeatures.json'
+path_cascade = ['./data/cascade_1.json', './data/cascade_2.json', './data/cascade_3.json']
+path_classifier = ['./data/classifier_1.json', './data/classifier_2.json', './data/classifier_3.json', 
+                    './data/classifier_4.json', './data/classifier_5.json', './data/classifier_6.json',
+                    './data/classifier_7.json', './data/classifier_8.json', './data/classifier_9.json',
+                    './data/classifier_10.json', './data/classifier_11.json', './data/classifier_12.json',
+                    './data/classifier_13.json', './data/classifier_14.json', './data/classifier_15.json',
+                    './data/classifier_16.json', './data/classifier_17.json', './data/classifier_18.json',
+                    './data/classifier_19.json', './data/classifier_20.json', './data/classifier_21.json']
+SIZE = (24, 24) # resize the image
 
 
 def load_images(face):
@@ -26,6 +36,7 @@ def load_images(face):
             if _file.endswith('.bmp'):
                 # loading images
                 img_arr = np.array(Image.open((os.path.join(path, _file))), dtype=np.float64)
+                img_arr.resize(SIZE)
                 images.append(img_arr)
 
     return images
@@ -42,14 +53,25 @@ def images_partition(images):
     dev_imgs = images[train_num:train_num + tenth_num]
     test_imgs = images[train_num + tenth_num:]
     return train_imgs, dev_imgs, test_imgs
-    
 
-def write_json_file(classifiers):
+
+def write_text_file(FP_rate, FN_rate, num_classifier):
+    # write FP rates and FN rates to text file
+    f = open('./results_FP_FN.txt', 'a+', encoding='utf-8')
+    f.write("FP RATE: %f\tFN RATE: %f\tnumber of classifiers: %d\n" % (FP_rate, FN_rate, num_classifier))
+    f.close()
+
+
+def write_json_file(classifiers, classifier, cascade, n_classifier=0, no_cascade=0):
     # write the haar-like classifiers into a json file
     # para classifiers: list of classifiers/features
     # type classifiers: list[haar.HaarLikeFeature]
     classifiers_dict = dict()
-    with open(path_json_file, 'w') as fp:
+
+    path = path_cascade[no_cascade] if cascade else path_json_file
+    path = path_classifier[no_cascade] if classifier else path_json_file
+    
+    with open(path, 'w') as fp:
         i = 0
         for c in classifiers:
             c_dict = dict()
@@ -64,7 +86,6 @@ def write_json_file(classifiers):
             i += 1
         json.dump(classifiers_dict, fp, indent=4)
     
-            
 
 def load_json_file():
     # load the haar-like classifiers from a json file
@@ -91,7 +112,57 @@ def reconstruct(classifiers, img_size):
     '''
     image = np.zeros(img_size)
 
+    for c in classifiers:
+        # map polarity: -1 -> 0, 1 -> 1
+        polarity = pow(1 + c.polarity, 2)/4
+
+        if c.type == featureType.TWO_VERTICAL:
+            for x in range(c.width):
+                sign = polarity
+                for y in range(c.height):
+                    if y >= c.height/2:
+                        sign = (sign + 1) % 2
+                    image[c.top_left[1] + y, c.top_left[0] + x] += 1 * sign * c.weight
+
+        elif c.type == featureType.TWO_HORIZONTAL:
+            sign = polarity
+            for x in range(c.width):
+                if x >= c.width/2:
+                    sign = (sign + 1) % 2
+                for y in range(c.height):
+                    image[c.top_left[0] + x, c.top_left[1] + y] += 1 * sign * c.weight
+
+        elif c.type == featureType.THREE_HORIZONTAL:
+            sign = polarity
+            for x in range(c.width):
+                if x % c.width/3 == 0:
+                    sign = (sign + 1) % 2
+                for y in range(c.height):
+                    image[c.top_left[0] + x, c.top_left[1] + y] += 1 * sign * c.weight
+
+        elif c.type == featureType.THREE_VERTICAL:
+            for x in range(c.width):
+                sign = polarity
+                for y in range(c.height):
+                    if x % c.height/3 == 0:
+                        sign = (sign + 1) % 2
+                    image[c.top_left[0] + x, c.top_left[1] + y] += 1 * sign * c.weight
+
+        elif c.type == featureType.FOUR:
+            sign = polarity
+            for x in range(c.width):
+                if x % c.width/2 == 0:
+                    sign = (sign + 1) % 2
+                for y in range(c.height):
+                    if x % c.height/2 == 0:
+                        sign = (sign + 1) % 2
+                    image[c.top_left[0] + x, c.top_left[1] + y] += 1 * sign * c.weight
+
+    image -= image.min()
+    image /= image.max()
+    image *= 255
     result = Image.fromarray(image.astype(np.uint8))
+
     return result
 
 
@@ -122,6 +193,30 @@ def ensemble_vote_all(int_imgs, classifiers):
     '''
     vote_partial = partial(ensemble_vote, classifiers=classifiers)
     return list(map(vote_partial, int_imgs))
+
+
+def count_Rate(pos_images, neg_images, classifiers):
+    # count the FalsePositiveRate and FalseNegativeRate of one strong classifier generated by AdaBoost
+    # para classifiers: classifiers of specific size 
+    # type classifiers: list[haar.HaarLikeFeature]
+    # para images: list of images ready for prediction
+    # return: FR rate and FN rate
+    num_pos = len(pos_images)
+    num_neg = len(neg_images)
+
+    # True positives
+    correct_pos_image = sum(ensemble_vote_all(pos_images, classifiers))
+    # False negatives (vote neg for pos images)
+    incorrect_pos_image = num_pos - correct_pos_image
+    
+    # False positives (vote pos for neg images)
+    incorrect_neg_image = sum(ensemble_vote_all(neg_images, classifiers))
+    # True negatives
+    correct_neg_image = num_neg - incorrect_neg_image
+
+    TP, FN, FP, TN = correct_pos_image, incorrect_pos_image, incorrect_neg_image, correct_neg_image
+
+    return TP, FN, FP, TN
 
 
 def two_haar_equal(haar0, haar1):

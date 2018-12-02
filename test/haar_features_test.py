@@ -36,8 +36,8 @@ class HarrLikeFeatureTest(unittest.TestCase):
         expected = 1 if feature.threshold * feature.parity > white - grey else 0
         expected_fail = 1 if feature.threshold * -1 > white - grey else 0
 
-        assert feature.get_vote(self.int_img) == expected
-        assert feature.get_vote(self.int_img) != expected_fail
+        assert feature.get_vote(self.int_img, 1) == expected
+        assert feature.get_vote(self.int_img, 1) != expected_fail
 
     def test_two_horizontal(self):
         # check the Two-rectangle(horizontal) features
