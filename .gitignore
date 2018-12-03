@@ -1,6 +1,7 @@
 # exclude training images
 train_images/
 trained/
+haar_features/
 */__pycache__/
 .vscode
 *.json

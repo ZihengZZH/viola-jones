@@ -179,10 +179,9 @@ def learn(pos_int_img, neg_int_img, num_classifiers=-1, min_feat_width=1, max_fe
             return np.sqrt((1 - best_error) / best_error)
 
         # update image weights (w_(t+1) = w_t * beta_t ^ (1 - e_i)), where e_i = 1 when misclassified
-        weights = np.array(list(map(lambda img_idx: weights[img_idx] * np.sqrt((1 - best_error) / best_error) if labels[img_idx] != votes[img_idx, best_feature_idx] else weights[img_idx] * np.sqrt(best_error / (1 - best_error)), range(num_imgs))))
         # map(func_to_apply, list_of_inputs) applies a function to all the items in an input_list
-        # weights_map = map(lambda img_idx: weights[img_idx] * new_weights(best_error) if labels[img_idx] != votes[img_idx, best_feature_idx] else weights[img_idx] * 1, range(num_imgs))
-        # weights = np.array(list(weights_map))
+        weights_map = map(lambda img_idx: weights[img_idx] * new_weights(best_error) if labels[img_idx] != votes[img_idx, best_feature_idx] else weights[img_idx] * 1, range(num_imgs))
+        weights = np.array(list(weights_map))
 
         # remove feature (a feature cannot be selected twice)
         feature_index.remove(best_feature_idx)

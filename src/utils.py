@@ -24,6 +24,7 @@ SIZE = (24, 24) # resize the image
 
 def load_images(face):
     # para face: whether a pos sample or a neg sample (boolean)
+    # type face: True or False
     # return para: list of loaded images
 
     path = path_data_face if face else path_data_no_face
@@ -103,8 +104,8 @@ def load_json_file():
 def reconstruct(classifiers, img_size):
     # create an image by putting all given classifiers on top of each other producing an archetype of the learned class of object
     '''
-    : para classifiers: list of classifiers/features
-    : type classifiers: list[haar.HaarLikeFeature]
+    : para classifiers: one classifier/feature
+    : type classifiers: haar.HaarLikeFeature
     : para img_size: tuple of width and height
     : type img_size: (int, int)
     : return: reconstructed image
@@ -113,43 +114,43 @@ def reconstruct(classifiers, img_size):
     image = np.zeros(img_size)
 
     for c in classifiers:
-        # map polarity: -1 -> 0, 1 -> 1
-        polarity = pow(1 + c.polarity, 2)/4
+        # map parity: -1 -> 0, 1 -> 1
+        parity = pow(1 + c.parity, 2)/4
 
-        if c.type == featureType.TWO_VERTICAL:
+        if c.type == "TWO_VERTICAL":
             for x in range(c.width):
-                sign = polarity
+                sign = parity
                 for y in range(c.height):
                     if y >= c.height/2:
                         sign = (sign + 1) % 2
                     image[c.top_left[1] + y, c.top_left[0] + x] += 1 * sign * c.weight
 
-        elif c.type == featureType.TWO_HORIZONTAL:
-            sign = polarity
+        elif c.type == "TWO_HORIZONTAL":
+            sign = parity
             for x in range(c.width):
                 if x >= c.width/2:
                     sign = (sign + 1) % 2
                 for y in range(c.height):
                     image[c.top_left[0] + x, c.top_left[1] + y] += 1 * sign * c.weight
 
-        elif c.type == featureType.THREE_HORIZONTAL:
-            sign = polarity
+        elif c.type == "THREE_HORIZONTAL":
+            sign = parity
             for x in range(c.width):
                 if x % c.width/3 == 0:
                     sign = (sign + 1) % 2
                 for y in range(c.height):
                     image[c.top_left[0] + x, c.top_left[1] + y] += 1 * sign * c.weight
 
-        elif c.type == featureType.THREE_VERTICAL:
+        elif c.type == "THREE_VERTICAL":
             for x in range(c.width):
-                sign = polarity
+                sign = parity
                 for y in range(c.height):
                     if x % c.height/3 == 0:
                         sign = (sign + 1) % 2
                     image[c.top_left[0] + x, c.top_left[1] + y] += 1 * sign * c.weight
 
-        elif c.type == featureType.FOUR:
-            sign = polarity
+        elif c.type == "FOUR":
+            sign = parity
             for x in range(c.width):
                 if x % c.width/2 == 0:
                     sign = (sign + 1) % 2
@@ -161,8 +162,13 @@ def reconstruct(classifiers, img_size):
     image -= image.min()
     image /= image.max()
     image *= 255
-    result = Image.fromarray(image.astype(np.uint8))
 
+    # reverse the color
+    image *= -1
+    image += 255
+    # expand the size
+    result = Image.fromarray(image.astype(np.uint8))
+    
     return result
 
 
